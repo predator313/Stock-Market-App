@@ -1,9 +1,12 @@
 package com.aamir.ashraf.stockmarketapp.features_stocks.data.repository
 
 import com.aamir.ashraf.stockmarketapp.core.utils.Resource
+import com.aamir.ashraf.stockmarketapp.features_stocks.data.csv.CSVParser
+import com.aamir.ashraf.stockmarketapp.features_stocks.data.csv.CompanyListingParser
 import com.aamir.ashraf.stockmarketapp.features_stocks.data.local.StockDao
 import com.aamir.ashraf.stockmarketapp.features_stocks.data.local.StockDatabase
 import com.aamir.ashraf.stockmarketapp.features_stocks.data.mapper.toCompanyListing
+import com.aamir.ashraf.stockmarketapp.features_stocks.data.mapper.toCompanyListingEntity
 import com.aamir.ashraf.stockmarketapp.features_stocks.data.remote.ApiInterface
 import com.aamir.ashraf.stockmarketapp.features_stocks.domain.model.CompanyListing
 import com.aamir.ashraf.stockmarketapp.features_stocks.domain.repository.StockRepository
@@ -17,7 +20,8 @@ import javax.inject.Singleton
 @Singleton
 class StockRepositoryImpl @Inject constructor(
     private val api: ApiInterface,
-    private val db:StockDatabase
+    private val db:StockDatabase,
+    private val companyListingParser: CSVParser<CompanyListing>
 ):StockRepository {
     private val dao = db.dao
     override suspend fun getCompanyListing(
@@ -51,14 +55,29 @@ class StockRepositoryImpl @Inject constructor(
 
             val remoteListing = try {
                val response = api.getListings()
-                response.byteStream()
+                companyListingParser.parse(response.byteStream())
             }catch (e:IOException){
                 e.printStackTrace()
                 emit(Resource.Error("please check your internet connection"))
+                null  //get null from api
             }
             catch (e:HttpException){
                 e.printStackTrace()
                 emit(Resource.Error(e.localizedMessage?:"parsing error ${e.code()}"))
+                null  //get null from api
+            }
+            remoteListing?.let {listing->
+                //todo single source of truth is important
+                //todo we always load data to ui from local not from api
+                dao.clearCompanyListings()
+                dao.insertCompanyListings(listing.map { it.toCompanyListingEntity() })
+                emit(Resource.Success(
+                    data = dao.searchCompanyListing("")   //load data from local
+                        .map {
+                            it.toCompanyListing()
+                        }
+                ))
+                emit(Resource.Loading(false))
             }
 
         }
