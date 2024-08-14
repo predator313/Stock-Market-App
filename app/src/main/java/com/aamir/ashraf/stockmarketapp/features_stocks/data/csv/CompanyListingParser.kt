@@ -9,8 +9,7 @@ import java.io.InputStreamReader
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@Singleton
-class CompanyListingParser @Inject constructor():CSVParser<CompanyListing> {
+class CompanyListingParser :CSVParser<CompanyListing> {
     override suspend fun parse(stream: InputStream): List<CompanyListing> {
         return withContext(Dispatchers.IO){
             val csvReader = CSVReader(InputStreamReader(stream))
