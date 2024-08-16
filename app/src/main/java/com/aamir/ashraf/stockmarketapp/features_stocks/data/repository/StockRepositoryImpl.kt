@@ -5,10 +5,13 @@ import com.aamir.ashraf.stockmarketapp.features_stocks.data.csv.CSVParser
 import com.aamir.ashraf.stockmarketapp.features_stocks.data.csv.CompanyListingParser
 import com.aamir.ashraf.stockmarketapp.features_stocks.data.local.StockDao
 import com.aamir.ashraf.stockmarketapp.features_stocks.data.local.StockDatabase
+import com.aamir.ashraf.stockmarketapp.features_stocks.data.mapper.toCompanyInfo
 import com.aamir.ashraf.stockmarketapp.features_stocks.data.mapper.toCompanyListing
 import com.aamir.ashraf.stockmarketapp.features_stocks.data.mapper.toCompanyListingEntity
 import com.aamir.ashraf.stockmarketapp.features_stocks.data.remote.ApiInterface
+import com.aamir.ashraf.stockmarketapp.features_stocks.domain.model.CompanyInfo
 import com.aamir.ashraf.stockmarketapp.features_stocks.domain.model.CompanyListing
+import com.aamir.ashraf.stockmarketapp.features_stocks.domain.model.IntraDayInfo
 import com.aamir.ashraf.stockmarketapp.features_stocks.domain.repository.StockRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -20,7 +23,8 @@ import javax.inject.Singleton
 class StockRepositoryImpl (
     private val api: ApiInterface,
     private val dao: StockDao,
-    private val companyListingParser: CSVParser<CompanyListing>
+    private val companyListingParser: CSVParser<CompanyListing>,
+    private val intraDayInfoParser: CSVParser<IntraDayInfo>,
 ):StockRepository {
 
     override suspend fun getCompanyListing(
@@ -80,5 +84,49 @@ class StockRepositoryImpl (
             }
 
         }
+    }
+
+    override suspend fun getIntraDayInfo(symbol: String): Resource<List<IntraDayInfo>> {
+       return try {
+            val response = api.getIntraDayInfo(symbol)
+           //response is csv file so we need to parse it
+           val result = intraDayInfoParser.parse(response.byteStream())
+           Resource.Success(result)
+
+
+        }catch (e:IOException){
+            e.printStackTrace()
+            Resource.Error(
+                message = "Please Check internet connection ${e.message}"
+            )
+
+        }catch (e:HttpException){
+            e.printStackTrace()
+            Resource.Error(
+                message = "Some Error ${e.message}"
+            )
+        }
+    }
+
+    override suspend fun getCompanyInfo(symbol: String): Resource<CompanyInfo> {
+        return try {
+            val response = api.getCompanyInfo(symbol)
+            val result = response.toCompanyInfo()
+            Resource.Success(result)
+
+
+        }catch (e:IOException){
+            e.printStackTrace()
+            Resource.Error(
+                message = "Please Check internet connection ${e.message}"
+            )
+
+        }catch (e:HttpException){
+            e.printStackTrace()
+            Resource.Error(
+                message = "Some Error ${e.message}"
+            )
+        }
+
     }
 }
