@@ -1,5 +1,6 @@
 package com.aamir.ashraf.stockmarketapp.features_stocks.presentation.company_listing.component
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aamir.ashraf.stockmarketapp.features_stocks.presentation.company_listing.CompanyListingEvent
 import com.aamir.ashraf.stockmarketapp.features_stocks.presentation.company_listing.CompanyListingViewModel
+import com.aamir.ashraf.stockmarketapp.features_stocks.presentation.destinations.CompanyInfoScreenDestination
+import com.aamir.ashraf.stockmarketapp.features_stocks.presentation.destinations.CompanyListingScreenDestination
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.ramcosta.composedestinations.annotation.Destination
@@ -64,7 +67,10 @@ fun CompanyListingScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                //todo
+                                Log.e("aamir","company clicked ${company.symbol}")
+                               navigator.navigate(
+                                   CompanyInfoScreenDestination(symbol = company.symbol)
+                               )
                             }
                             .padding(16.dp)
                     )
